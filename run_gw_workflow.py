@@ -142,10 +142,28 @@ for i in range(num_full_sets):
         if stderr != None:
             f.write(stderr)
         f.close() 
-        jsub = subprocess.check_output(['tail', '-1', 'dagmaker_'+exposure+'.out'])
-        print('Jobsub command: ' + jsub[0:-1])
-        jobsub_info.append(jsub[0:-1])
-        rel_exps.append(exposure)
+        jsub = subprocess.check_output(['tail', '-3', 'dagmaker_'+exposure+'.out'])
+        jsub = jsub.split(b'\n')
+    
+        try:
+
+            if jsub[0].decode('ascii') == 'NO TEMPLATE IMAGES, DIFFIMG WILL FAIL':
+                print(jsub[0].decode('ascii'))
+                continue
+            else:
+                print('Jobsub command: ' + jsub[-2].decode('ascii'))
+                jobsub_info.append(jsub[-2].decode('ascii'))
+                rel_exps.append(exposure)
+
+        except(UnicodeDecodeError, AttributeError):
+
+            if jsub[0] == 'NO TEMPLATE IMAGES, DIFFIMG WILL FAIL':
+                print(jsub[0])
+                continue
+            else:
+                print('Jobsub command: ' + jsub[-2])
+                jobsub_info.append(jsub[-2])
+                rel_exps.append(exposure)
         
     for jobsub_datum in jobsub_info:
         if jobsub_datum.split(' ')[0] != 'jobsub_submit_dag':
@@ -183,10 +201,28 @@ for exposure, process in zip(exp_,proc_):
     if stderr != None:
         f.write(stderr)
     f.close()
-    jsub = subprocess.check_output(['tail', '-1', 'dagmaker_'+exposure+'.out'])
-    print('Jobsub command: ' + jsub[0:-1])
-    jobsub_info.append(jsub[0:-1])
-    rel_exps.append(exposure)
+    jsub = subprocess.check_output(['tail', '-3', 'dagmaker_'+exposure+'.out'])
+    jsub = jsub.split(b'\n')
+    
+    try:
+
+        if jsub[0].decode('ascii') == 'NO TEMPLATE IMAGES, DIFFIMG WILL FAIL':
+            print(jsub[0].decode('ascii'))
+            continue
+        else:
+            print('Jobsub command: ' + jsub[-2].decode('ascii'))
+            jobsub_info.append(jsub[-2].decode('ascii'))
+            rel_exps.append(exposure)
+            
+    except(UnicodeDecodeError, AttributeError):
+        
+        if jsub[0] == 'NO TEMPLATE IMAGES, DIFFIMG WILL FAIL':
+            print(jsub[0])
+            continue
+        else:
+            print('Jobsub command: ' + jsub[-2])
+            jobsub_info.append(jsub[-2])
+            rel_exps.append(exposure)
     
 for jobsub_datum in jobsub_info:
     if jobsub_datum.split(' ')[0] != 'jobsub_submit_dag':
