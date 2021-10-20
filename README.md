@@ -14,9 +14,11 @@ Started during the DESGW Workshop Oct 11 - 14
       set of exposures will be search versus template images 
       and require consecutive expnums, >30sec and < 200?sec 
       exposures, and teff limits.
+
    b) A script that edits dagmaker.rc to ensure we don’t use 
       the chosen search exposures as templates (e.g., edits
       the min / max nite, teff limits, t window, and season).
+
    c) A script to verify the dagmaker.rc file was configured 
       correctly. Includes smart assert statements.
 
