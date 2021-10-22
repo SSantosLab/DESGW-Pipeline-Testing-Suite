@@ -4,7 +4,6 @@ import numpy as np
 import configparser
 import argparse
 import subprocess
-import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--season', type=str)
@@ -30,24 +29,31 @@ for exp, nite in zip(exps, nites):
     nite = str(nite)
 
     print(dir_prefix_exp + nite + '/' + exp + '/dp' + season)
-    files_finished = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '*_*/*.tar.gz')
-    files_filled = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '*_*/stamps*')
-    files_failed = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '*_*/*.FAIL')
+    files_finished = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '/*_*/*.tar.gz')
+    files_filled = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '/*_*/stamps*')
+    files_failed = glob.glob(dir_prefix_exp + nite + '/' + exp + '/dp' + season + '/*_*/*.FAIL')
     finished_ccds = [f.split('/')[-2] for f in files_finished]
     failed_ccds = []
-    fail_typs = []
+    fail_types = []
+
     for f in files_failed:
         failed_ccds.append(f.split('/')[-2])
         fail_types.append(f.split('/')[-1])
 
     if len(files_finished) == 0 and len(files_failed) == 0:
         print('Nothing has finished for ' + exp + '.')
+    
+    elif len(files_failed) == 0 and len(files_finished) > 0:
+        for finished_ccd in finished_ccds:
+            print(finished_ccd + ' finished and did not fail.')
+
     else:
         run = []
     
         for ccd in finished_ccds:
             if ccd in failed_ccds:
                 run.append(fail_types[failed_ccds.index(ccd)].split('.')[0])
+        
         for run_num in np.unique(run):
             count = 0
             for r in run:
@@ -60,7 +66,7 @@ for exp, nite in zip(exps, nites):
     files_psf = glob.glob(dir_prefix_fp + season + '/' + nite + '/' + exp + '/*.psf')
 
     if len(files_fits) > 0 and len(files_psf) > 0:
-        print('All ForcePhoto outputs for '+ exp + ' are present.')
+        print('ForcePhoto outputs for '+ exp + ' are present.')
     else:
         if len(files_fits) == 0 and len(files_psf) == 0:
             print('Missing all ForcePhoto outputs for ' + exp + '.')
