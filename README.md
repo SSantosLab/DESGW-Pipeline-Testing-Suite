@@ -38,6 +38,7 @@ Started during the DESGW Workshop Oct 11 - 14
    
    a) A script to create the postproc_SEASON.ini file with
       the appropriate settings
+
    b) A script to run the Post-Processing Pipeline.
  
 5) Evaluate the success of Post-Processing
