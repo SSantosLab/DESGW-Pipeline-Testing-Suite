@@ -166,7 +166,7 @@ for i in range(num_full_sets):
                 rel_exps.append(exposure)
         
     for jobsub_datum in jobsub_info:
-        if jobsub_datum.split(' ')[0] != 'jobsub_submit_dag':
+        if jobsub_datum.split()[0] != 'jobsub_submit_dag':
             f = open('Problematic_DAGmaker_Outputs.txt', 'a+')
             f.write(str(exposure) + '\n')
             f.close()
@@ -179,6 +179,7 @@ for i in range(num_full_sets):
             f.write(stdout)
             if stderr != None:
                 f.write(stderr)
+                print("Something went wrong with submitting the job for " + exposure + ".")
             f.close()
 
 exp_ = []
@@ -225,7 +226,7 @@ for exposure, process in zip(exp_,proc_):
             rel_exps.append(exposure)
     
 for jobsub_datum in jobsub_info:
-    if jobsub_datum.split(' ')[0] != 'jobsub_submit_dag':
+    if jobsub_datum.split()[0] != 'jobsub_submit_dag':
         f = open('Problematic_DAGmaker_Outputs.txt', 'a+')
         f.write(str(exposure) + '\n')
         f.close()
@@ -238,4 +239,5 @@ for jobsub_datum in jobsub_info:
         f.write(stdout)
         if stderr != None:
             f.write(stderr)
+            print("Something went wrong with submitting the job for " + exposure + ".")
         f.close()
