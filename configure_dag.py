@@ -17,7 +17,7 @@ import utils
 
 ### Main functions.
 
-#@utils.log_start_and_finish
+@utils.log_start_and_finish
 def get_exposure_info(ra: float, dec: float) -> pd.DataFrame:
     """Create an exposure info df for all exposures in a pointing.
 
@@ -31,7 +31,7 @@ def get_exposure_info(ra: float, dec: float) -> pd.DataFrame:
     # TODO(@Alyssa)
     return pd.DataFrame()
 
-#@utils.log_start_and_finish
+@utils.log_start_and_finish
 def write_dag_rc(exposure_df: pd.DataFrame, outfile: str):
     """Write a DAGMaker.rc file based on the exposure information.
 
