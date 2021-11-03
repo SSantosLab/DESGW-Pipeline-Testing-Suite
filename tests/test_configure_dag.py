@@ -1,5 +1,6 @@
 """Unit tests for configure_dag.py"""
 
+import datetime
 import os
 import sys
 import unittest
@@ -23,6 +24,7 @@ class TestConfigureDAG(unittest.TestCase):
                 'PROPID', 'OBJECT', 'TEFF', 'COMMENT', 'SEARCH',
             ]
         )
+        self.today = datetime.date.today()
 
     def test_get_exposure_info(self):
         """Check return type."""
@@ -74,6 +76,13 @@ class TestConfigureDAG(unittest.TestCase):
             self.assertEqual(min_nite, expected_time_info.min_nite)
             self.assertEqual(max_nite, expected_time_info.max_nite)
             self.assertAlmostEqual(twindow, expected_time_info.twindow)
+
+            # Test that season has the correct value.
+            expected_season = int(
+                (self.today.year - 2000) * 100 + self.today.month
+            )
+            season = int(_get_value('SEASON', lines))
+            self.assertEqual(season, expected_season)
 
         # Clean up after test runs.
         if os.path.exists(outfile):
