@@ -55,7 +55,8 @@ class TestConfigureDAG(unittest.TestCase):
 
 
         outfile = "test_write_dag.rc"
-        configure_dag.write_dag_rc(self.test_exposure_df, outfile)
+        season = configure_dag._get_season(self.today)
+        configure_dag.write_dag_rc(self.test_exposure_df, season, outfile)
 
         # Test that the outfile was made.
         self.assertTrue(os.path.exists(outfile))
@@ -78,9 +79,7 @@ class TestConfigureDAG(unittest.TestCase):
             self.assertAlmostEqual(twindow, expected_time_info.twindow)
 
             # Test that season has the correct value.
-            expected_season = int(
-                (self.today.year - 2000) * 100 + self.today.month
-            )
+            expected_season = configure_dag._get_season(self.today)
             season = int(_get_value('SEASON', lines))
             self.assertEqual(season, expected_season)
 
@@ -99,6 +98,11 @@ class TestConfigureDAG(unittest.TestCase):
         self.assertEqual(time_info.max_nite, 21000101)
         self.assertAlmostEqual(time_info.twindow, 2.0, places=1)
 
+    def test_get_season(self):
+        date = datetime.date(year=2021, month=11, day=6)
+        expected_season = 2111
+        season = configure_dag._get_season(date)
+        self.assertEqual(season, expected_season)
 
 if __name__ == "__main__":
     unittest.main()

@@ -76,6 +76,19 @@ DO_HEADER_CHECK=1
         f.write(dag_info)
 
 ### Helper functions.
+def _get_season(date: datetime.date) -> int:
+  """Convert a date to a season number.
+
+  The season numbers follow the form YYMM, so this function formats a date to
+  have the season format.
+
+  Args:
+    date: A datetime.date object.
+
+  Returns:
+    The date in YYMM format as an int.
+  """
+  return int((date.year - 2000) * 100 + date.month)
 
 @dataclass
 class TimeInfo:
@@ -122,8 +135,7 @@ if __name__ == "__main__":
     utils._setup_logging(log_file)
 
     # Choose season.
-    today = datetime.date.today()
-    season = int((today.year - 2000) * 100 + today.month)
+    season = _get_season(datetime.date.today())
 
     # Choose pointing.
     ra = random.uniform(0.0, 360.0 - 1.e-5)
