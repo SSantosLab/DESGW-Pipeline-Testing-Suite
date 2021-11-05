@@ -1,5 +1,6 @@
 """Unit tests for configure_dag.py"""
 
+import datetime
 import os
 import sys
 import unittest
@@ -23,6 +24,7 @@ class TestConfigureDAG(unittest.TestCase):
                 'PROPID', 'OBJECT', 'TEFF', 'COMMENT', 'SEARCH',
             ]
         )
+        self.today = datetime.date.today()
 
     def test_get_exposure_info(self):
         """Check return type."""
@@ -53,7 +55,8 @@ class TestConfigureDAG(unittest.TestCase):
 
 
         outfile = "test_write_dag.rc"
-        configure_dag.write_dag_rc(self.test_exposure_df, outfile)
+        season = configure_dag._get_season(self.today)
+        configure_dag.write_dag_rc(self.test_exposure_df, season, outfile)
 
         # Test that the outfile was made.
         self.assertTrue(os.path.exists(outfile))
@@ -75,6 +78,11 @@ class TestConfigureDAG(unittest.TestCase):
             self.assertEqual(max_nite, expected_time_info.max_nite)
             self.assertAlmostEqual(twindow, expected_time_info.twindow)
 
+            # Test that season has the correct value.
+            expected_season = configure_dag._get_season(self.today)
+            season = int(_get_value('SEASON', lines))
+            self.assertEqual(season, expected_season)
+
         # Clean up after test runs.
         if os.path.exists(outfile):
             os.system(f"rm {outfile}")
@@ -90,6 +98,11 @@ class TestConfigureDAG(unittest.TestCase):
         self.assertEqual(time_info.max_nite, 21000101)
         self.assertAlmostEqual(time_info.twindow, 2.0, places=1)
 
+    def test_get_season(self):
+        date = datetime.date(year=2021, month=11, day=6)
+        expected_season = 2111
+        season = configure_dag._get_season(date)
+        self.assertEqual(season, expected_season)
 
 if __name__ == "__main__":
     unittest.main()

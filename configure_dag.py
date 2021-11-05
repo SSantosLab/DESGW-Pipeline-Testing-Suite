@@ -7,6 +7,7 @@ file for monthly end-to-end tests. The steps are:
 """
 
 from dataclasses import dataclass
+import datetime
 import logging
 import random
 import sys
@@ -33,11 +34,13 @@ def get_exposure_info(ra: float, dec: float) -> pd.DataFrame:
     return pd.DataFrame()
 
 @utils.log_start_and_finish
-def write_dag_rc(exposure_df: pd.DataFrame, outfile: str = 'dagmaker.rc'):
+def write_dag_rc(
+  exposure_df: pd.DataFrame, season: int, outfile: str = 'dagmaker.rc'):
     """Write a DAGMaker.rc file based on the exposure information.
 
     Args:
       exposure_df (pd.DataFrame): A DataFrame containing the exposure info.
+      season (int): The season to use for the database.
       outfile (str, default='dagmaker.rc'): Name of outfile.
     """
     time_info = _get_time_boundaries(exposure_df)
@@ -45,7 +48,7 @@ def write_dag_rc(exposure_df: pd.DataFrame, outfile: str = 'dagmaker.rc'):
     dag_info = f"""
 RNUM=4
 PNUM=7
-SEASON=34
+SEASON={season}
 DIFFIMG_EUPS_VERSION=gw7
 WRITEDB=on
 RM_MYTEMP=true
@@ -73,6 +76,19 @@ DO_HEADER_CHECK=1
         f.write(dag_info)
 
 ### Helper functions.
+def _get_season(date: datetime.date) -> int:
+  """Convert a date to a season number.
+
+  The season numbers follow the form YYMM, so this function formats a date to
+  have the season format.
+
+  Args:
+    date: A datetime.date object.
+
+  Returns:
+    The date in YYMM format as an int.
+  """
+  return int((date.year - 2000) * 100 + date.month)
 
 @dataclass
 class TimeInfo:
@@ -118,6 +134,9 @@ if __name__ == "__main__":
     log_file = "configure_dag.log"  # TODO(@Rob): decide on default filename.
     utils._setup_logging(log_file)
 
+    # Choose season.
+    season = _get_season(datetime.date.today())
+
     # Choose pointing.
     ra = random.uniform(0.0, 360.0 - 1.e-5)
     dec = random.uniform(-90.0, 30.0)  # +30 is the upper limit for DECam.
@@ -130,7 +149,7 @@ if __name__ == "__main__":
     logging.info(exposure_df)
 
     # Create DAGMaker rc.
-    write_dag_rc(exposure_df)
+    write_dag_rc(exposure_df, season)
 
     logging.debug("Program Completed.")
 
