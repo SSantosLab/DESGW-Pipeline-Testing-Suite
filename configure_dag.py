@@ -15,12 +15,15 @@ import sys
 import pandas as pd
 
 import utils
+import more_itertools as mit
+import numpy as np
+import psycopg2
 
 
 ### Main functions.
 
 @utils.log_start_and_finish
-def get_exposure_info(ra: float, dec: float) -> pd.DataFrame:
+def get_exposure_info(ra: float, dec: float, minexp=None, maxexp=None) -> pd.DataFrame:
     """Create an exposure info df for all exposures in a pointing.
 
     Args:
@@ -30,8 +33,117 @@ def get_exposure_info(ra: float, dec: float) -> pd.DataFrame:
     Returns:
       A DataFrame containing the exposure information.
     """
-    # TODO(@Alyssa)
-    return pd.DataFrame()
+    minra = ra - 5.0
+    maxra = ra + 5.0
+    mindec = dec - 5.0
+    maxdec = dec + 5.0
+
+    # for quick testing, use know expnumns
+    # get all the info that would normally be in exposures.list
+    if minexp is not None and maxexp is not None:
+        query = """                                                                           
+            SELECT id as EXPNUM,                                                              
+            TO_CHAR(date - '12 hours'::INTERVAL, 'YYYYMMDD') AS NITE,                         
+            EXTRACT(EPOCH FROM date - '1858-11-17T00:00:00Z')/(24*60*60) AS MJD_OBS,          
+                ra AS RADEG,                                                                  
+                declination AS DECDEG,                                                        
+                filter AS BAND,                                                               
+                exptime AS EXPTIME,                                                           
+                propid AS PROPID,                                                             
+                flavor AS OBSTYPE,                                                            
+                qc_teff as TEFF,                                                              
+                object as OBJECT                                                              
+            FROM exposure.exposure                                                            
+            WHERE flavor='object' and exptime>29.999 and RA is not NULL and                   
+                id>="""+str(minexp)+"""and id<="""+str(maxexp)+"""                   
+            ORDER BY id"""
+        conn =  psycopg2.connect(database='decam_prd',
+                           user='decam_reader',
+                           host='des61.fnal.gov',
+                           port=5443)
+        allexps = pd.read_sql(query, conn)
+        search = ['True'] * len(allexps.index)
+        allexps['SEARCH'] = search
+        return allexps
+
+    else:
+        # using ra and dec to create a square and query from there
+        query = """ SELECT id as EXPNUM,
+                    TO_CHAR(date - '12 hours'::INTERVAL, 'YYYYMMDD') AS NITE,
+                    EXTRACT(EPOCH FROM date - '1858-11-17T00:00:00Z')/(24*60*60) AS MJD_OBS,
+                        ra AS RADEG,
+                        declination AS DECDEG,
+                        filter AS BAND,                                                                
+                        exptime AS EXPTIME,                                                            
+                        propid AS PROPID,                                                              
+                        flavor AS OBSTYPE,                                                             
+                        qc_teff as TEFF,                                                               
+                        object as OBJECT 
+                    FROM exposure.exposure                                                             
+                    WHERE flavor='object' and exptime>29.999  
+                        and RA >="""+str(minra)+""" and RA <= """+str(maxra)+"""  
+                        and DECLINATION >="""+str(mindec)+""" and DECLINATION <="""+str(maxdec)+""" 
+                   ORDER BY id"""
+        conn =  psycopg2.connect(database='decam_prd',
+                           user='decam_reader',
+                           host='des61.fnal.gov',
+                           port=5443)
+        allexps = pd.read_sql(query, conn)
+
+        # get only exposures with appropriate teff and exposure lenghts
+        df = allexps[(allexps['exptime']<=200) & (allexps['exptime']>=30)
+                     & (allexps['teff'] >=0.05)].copy().reset_index(drop=True)
+        
+        # decide which exposure will be search and temps                                   
+        gp = df.groupby('nite')
+        if gp.ngroups < 2:
+            # only one nite available, would this even work?
+            print('ONLY ONE NIGHT OF EXPOSURES AVAILABLE. WILL RUN, PIPELINE WILL LIKELY FAIL')
+            print('CONSIDER RERUNNING')
+            df = pd.read_sql(query, conn)
+            search = [True] * len(df.index)
+
+        elif gp.ngroups == 2:
+            # use group with most recent exposures as search
+            srch_nites = max(gp.groups.keys())
+            search = []
+            for n in df['nite']:
+                if int(n) in srch_nites:
+                    search.append(True)
+                else:
+                    search.append(False)
+
+        else:
+            # ideally want nights with multiple exposures per night
+            sizes = dict(df.groupby('nite').size())
+            src = {}
+            for key, val in sizes.items():
+                if val > 2: # 4 exposures per night is arbitrary 
+                    src[int(key)] = val
+            cons = [list(group) for group in mit.consecutive_groups(sorted(src.keys()))] #groups by consec. nites
+            
+            # pick the most recent expousres as search
+            try:
+                srch_nites = max([nite for nite in cons if len(nite)>=2])
+            except: #nothing with consecutive nights
+                srch_nites = max(cons)
+
+            # create the search column
+            search = []
+            i = 0
+            for n in df['nite']:
+                if int(n) in srch_nites:
+                    i += 1
+                    if i <= 20:
+                        search.append(True)
+                    else:
+                        search.append(False)
+                else:
+                    search.append(False)
+
+        df['SEARCH'] = search
+        return df
+        
 
 @utils.log_start_and_finish
 def write_dag_rc(
@@ -118,7 +230,7 @@ def _get_time_boundaries(exposure_df: pd.DataFrame) -> TimeInfo:
     min_nite = 20100101
     max_nite = 21000101
 
-    mjds = exposure_df['MJD'].values.astype(float)
+    mjds = exposure_df['mjd_obs'].values.astype(float)
     mask = exposure_df['SEARCH'].values.astype(str) == "True"
     twindow = mjds[mask].max() - mjds[mask].min() + 2.0
 
@@ -145,6 +257,8 @@ if __name__ == "__main__":
 
     # Get exposures.
     exposure_df = get_exposure_info(ra, dec)
+    exposure_df.to_csv(str(season)+'exposures.csv', index=False)
+    np.savetxt(str(season)+'exposures.list',exposure_df['expnum'].values[exposure_df['SEARCH'].values], fmt='%d')
     logging.info("get_exposure_info output:")
     logging.info(exposure_df)
 
