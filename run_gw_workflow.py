@@ -7,11 +7,12 @@ import os
 import time
 from subprocess import Popen, PIPE
 import argparse
+import sys
 
 # Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp_list', type=str)
-parser.add_argument('--coadd', default=True, action='store_true')
+parser.add_argument('--coadd', default=False)
 args = parser.parse_args()
 
 # Function
@@ -87,15 +88,15 @@ def getCoadd(eList):
 # Script
 exposures = EXPlist(args.exp_list)
 
-if coadd:
+if args.coadd:
     exposures = getCoadd(exposures)
     
 ## Get expsure groups
 len_exps = len(exposures)
-if coadd:
+if args.coadd:
     print("The number of coadd sets is " + str(len_exps) + ".")
 else:
-    print("The number of exposure sets is "+ str(len_exps) + ".")
+    print("The number of exposures is "+ str(len_exps) + ".")
 last_set_len = len_exps % 5 # For submissions of 4 DAGmaker run at a time, the size of the last set of DAGmaker runs
 num_full_sets = len_exps // 5 # Number of DAGmaker sets of 4 runs
 if last_set_len > 0:
@@ -104,7 +105,7 @@ if last_set_len > 0:
 else:
     number_o_sets = num_full_sets
     print("The number of threaded DAGmaker runs will be "+ str(number_o_sets)+": "+str(num_full_sets) + " sets of 5 DAGmaker runs.")    
-    
+
 ## Run DAGMaker
 start_index = 0
 for i in range(num_full_sets):
