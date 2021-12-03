@@ -23,6 +23,8 @@ nites = list(exp_details['nite'])
 dir_prefix_exp = '/pnfs/des/persistent/gw/exp/'
 dir_prefix_fp = '/pnfs/des/persistent/gw/forcephoto/images/dp'
 
+forcephoto_count = 0
+
 for exp, nite in zip(exps, nites):
 
     exp = str(exp)
@@ -44,8 +46,9 @@ for exp, nite in zip(exps, nites):
         print('Nothing has finished for ' + exp + '.')
     
     elif len(files_failed) == 0 and len(files_finished) > 0:
-        for finished_ccd in finished_ccds:
-            print(finished_ccd + ' finished and did not fail.')
+        print(str(len(finished_ccds)) + ' ccds have finished, and none have failed.')
+        #for finished_ccd in finished_ccds:
+        #    print(finished_ccd + ' finished and did not fail.')
 
     else:
         run = []
@@ -66,6 +69,7 @@ for exp, nite in zip(exps, nites):
     files_psf = glob.glob(dir_prefix_fp + season + '/' + nite + '/' + exp + '/*.psf')
 
     if len(files_fits) > 0 and len(files_psf) > 0:
+        forcephoto_count += 1
         print('ForcePhoto outputs for '+ exp + ' are present.')
     else:
         if len(files_fits) == 0 and len(files_psf) == 0:
@@ -74,3 +78,5 @@ for exp, nite in zip(exps, nites):
             print('Missing the fits output for ' + exp + '.')
         else:
             print('Missing the psf output for ' + exp +'.')
+
+print(forcephoto_count)
