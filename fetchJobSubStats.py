@@ -1,4 +1,5 @@
 import glob
+import pickle
 import pandas as pd
 import numpy as np
 import configparser
@@ -23,7 +24,8 @@ nites = list(exp_details['nite'])
 dir_prefix_exp = '/pnfs/des/persistent/gw/exp/'
 dir_prefix_fp = '/pnfs/des/persistent/gw/forcephoto/images/dp'
 
-forcephoto_count = 0
+stats_dict = {}
+finished = 0
 
 for exp, nite in zip(exps, nites):
 
@@ -42,6 +44,8 @@ for exp, nite in zip(exps, nites):
         failed_ccds.append(f.split('/')[-2])
         fail_types.append(f.split('/')[-1])
 
+    dict_fails = []
+
     if len(files_finished) == 0 and len(files_failed) == 0:
         print('Nothing has finished for ' + exp + '.')
     
@@ -56,21 +60,30 @@ for exp, nite in zip(exps, nites):
         for ccd in finished_ccds:
             if ccd in failed_ccds:
                 run.append(fail_types[failed_ccds.index(ccd)].split('.')[0])
-        
+                
         for run_num in np.unique(run):
             count = 0
             for r in run:
                 if r == run_num:
                     count += 1
             print(run_num + ': {:0.2f}'.format(float(count)/float(len(files_finished))*100) + '% of CCDs failed on this step. (' + str(count) + ' out of ' + str(len(files_finished))+').')
+            
+            try:
+                stats_dict[run_num] += count
+            except KeyError:
+                stats_dict[run_num] = count
+
+        finished += len(files_finished)
         
     print(dir_prefix_fp + season + '/' + nite + '/' + exp + '/')
     files_fits = glob.glob(dir_prefix_fp + season + '/' + nite + '/' + exp + '/*.fits')
     files_psf = glob.glob(dir_prefix_fp + season + '/' + nite + '/' + exp + '/*.psf')
+    
+    all_forcephot_present = False
 
     if len(files_fits) > 0 and len(files_psf) > 0:
-        forcephoto_count += 1
         print('ForcePhoto outputs for '+ exp + ' are present.')
+        all_forcephot_present = True
     else:
         if len(files_fits) == 0 and len(files_psf) == 0:
             print('Missing all ForcePhoto outputs for ' + exp + '.')
@@ -79,4 +92,7 @@ for exp, nite in zip(exps, nites):
         else:
             print('Missing the psf output for ' + exp +'.')
 
-print(forcephoto_count)
+    stats_dict['Finished'] = finished
+
+with open('fetchJobSubStatsDict.pkl', 'wb') as f:
+    pickle.dump(stats_dict, f)
