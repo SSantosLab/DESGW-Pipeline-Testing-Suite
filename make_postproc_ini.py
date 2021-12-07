@@ -7,7 +7,6 @@ parser.add_argument('--recycler_mjd', type=float, help="recycler mjd")
 parser.add_argument('--propid', type=str, help="propid 20##B-####")
 parser.add_argument('--exp_list', type=str)
 parser.add_argument('--bands', type=str)
-parser.add_argument('--GoodSNIDs', type=str)
 args = parser.parse_args()
 
 config = configparser.RawConfigParser()
@@ -25,7 +24,7 @@ config['general'] = {'season': args.season,
                      'schema': 'marcelle',
                      'exposures_listfile': args.exp_list,
                      'bands': args.bands,
-                     'GoodSNIDs': args.GoodSNIDs}
+                     'GoodSNIDs': '/this/file/does/not/exist'}
 
 config['plots'] = {'mlscore_cut': '0.7'}
 
