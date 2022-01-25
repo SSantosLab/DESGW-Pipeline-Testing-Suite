@@ -90,9 +90,11 @@ def get_exposure_info(ra: float, dec: float, minexp=None, maxexp=None) -> pd.Dat
                            port=5443)
         allexps = pd.read_sql(query, conn)
 
-        # get only exposures with appropriate teff and exposure lenghts
+        # get only exposures with appropriate teff and exposure lenghts, and filters
         df = allexps[(allexps['exptime']<=200) & (allexps['exptime']>=30)
-                     & (allexps['teff'] >=0.05)].copy().reset_index(drop=True)
+                     & (allexps['teff'] >=0.05) 
+                     & (allexps.band.isin(['g', 'r', 'i', 'z']))].copy().reset_index(drop=True)
+        print(len(df))
         
         # decide which exposure will be search and temps                                   
         gp = df.groupby('nite')
